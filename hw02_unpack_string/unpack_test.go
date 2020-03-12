@@ -1,9 +1,8 @@
 package hw02_unpack_string //nolint:golint,stylecheck
 
 import (
-	"testing"
-
 	"github.com/stretchr/testify/require"
+	"testing"
 )
 
 type test struct {
@@ -36,6 +35,37 @@ func TestUnpack(t *testing.T) {
 			input:    "",
 			expected: "",
 		},
+		{
+			input:    "฿9",
+			expected: "฿฿฿฿฿฿฿฿฿",
+		},
+		{
+			input:    " 5",
+			expected: "     ",
+		},
+		{
+			input:    "5",
+			expected: "",
+			err:      ErrInvalidString,
+		},
+		{
+			input:    "0",
+			expected: "",
+			err:      ErrInvalidString,
+		},
+		{
+			input:    "a0",
+			expected: "",
+			err:      ErrInvalidString,
+		},
+		{
+			input:    `a\f`,
+			expected: "af",
+		},
+		{
+			input:    "Ё3а4г1",
+			expected: "ЁЁЁааааг",
+		},
 	} {
 		result, err := Unpack(tst.input)
 		require.Equal(t, tst.err, err)
@@ -44,7 +74,7 @@ func TestUnpack(t *testing.T) {
 }
 
 func TestUnpackWithEscape(t *testing.T) {
-	t.Skip() // Remove if task with asterisk completed
+	//t.Skip() // Remove if task with asterisk completed
 
 	for _, tst := range [...]test{
 		{
@@ -62,6 +92,19 @@ func TestUnpackWithEscape(t *testing.T) {
 		{
 			input:    `qwe\\\3`,
 			expected: `qwe\3`,
+		},
+		{
+			input:    `\55`,
+			expected: `55555`,
+		},
+		{
+			input:    `\w`,
+			expected: `w`,
+		},
+		{
+			input:    `q\`,
+			expected: ``,
+			err:      ErrUnexpectedEnd,
 		},
 	} {
 		result, err := Unpack(tst.input)
