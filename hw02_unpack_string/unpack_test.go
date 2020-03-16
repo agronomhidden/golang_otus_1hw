@@ -1,8 +1,8 @@
 package hw02_unpack_string //nolint:golint,stylecheck
 
 import (
-	"github.com/stretchr/testify/require"
 	"testing"
+	"github.com/stretchr/testify/require"
 )
 
 type test struct {
