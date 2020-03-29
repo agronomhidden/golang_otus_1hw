@@ -1,13 +1,13 @@
 package hw03_frequency_analysis //nolint:golint
 
 import (
-	"testing"
-
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"testing"
 )
 
 // Change to true if needed
-var taskWithAsteriskIsCompleted = false
+var taskWithAsteriskIsCompleted = true
 
 var text = `Как видите, он  спускается  по  лестнице  вслед  за  своим
 	другом   Кристофером   Робином,   головой   вниз,  пересчитывая
@@ -57,4 +57,35 @@ func TestTop10(t *testing.T) {
 			assert.ElementsMatch(t, expected, Top10(text))
 		}
 	})
+}
+
+func TestNormalize(t *testing.T) {
+	for _, tst := range [...]struct {
+		input    string
+		expected string
+		err      error
+	}{
+		{
+			input:    "Слово!?",
+			expected: "слово",
+		},
+		{
+			input:    "Какой-то?",
+			expected: "какой-то",
+		},
+		{
+			input:    "-",
+			expected: "",
+			err:      ErrIncorrectWord,
+		},
+		{
+			input:    "",
+			expected: "",
+			err:      ErrIncorrectWord,
+		},
+	} {
+		result, err := normalize(tst.input)
+		require.Equal(t, tst.err, err)
+		require.Equal(t, tst.expected, result)
+	}
 }
