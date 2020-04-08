@@ -8,20 +8,23 @@ import (
 var mutex = &sync.Mutex{}
 var counter uint
 var ErrOuterItem = errors.New("list is not contain received item")
+var ErrNilledItem = errors.New("nilled item has been received")
 
-func getId() uint {
+func getID() uint {
 	mutex.Lock()
 	defer mutex.Unlock()
 	counter++
 	return counter
 }
+
 // хочется сделать защиту от передачи в список элемента,
 // который не принадлежит данному списку
 // для этого вводим некий идентификатор элемента
 // и ошибки если передали чужеродный элемент
+// + может быть передан нулевой указатель, как у нас в тестах: middle := l.Back().Next // 20
 type List interface {
 	Len() int
-    Front() *listItem
+	Front() *listItem
 	Back() *listItem
 	PushFront(v interface{}) *listItem
 	PushBack(v interface{}) *listItem
@@ -33,9 +36,9 @@ type List interface {
 // на элемент из совсем другого списка.
 type listItem struct {
 	Value interface{}
-	next *listItem
-	prev *listItem
-	id uint
+	next  *listItem
+	prev  *listItem
+	id    uint
 }
 
 func (e listItem) Next() *listItem {
@@ -48,13 +51,13 @@ func (e listItem) Prev() *listItem {
 
 type list struct {
 	first *listItem
-	last *listItem
+	last  *listItem
 	index map[uint]struct{}
 	sync.Mutex
 	len int
 }
 
-func (e list) Len() int {
+func (e *list) Len() int {
 	return e.len
 }
 
@@ -63,6 +66,8 @@ func (e *list) PushFront(v interface{}) *listItem {
 	newItem.next = e.first
 	if e.first == nil {
 		e.last = newItem
+	} else {
+		newItem.next.prev = newItem
 	}
 	e.first = newItem
 
@@ -74,6 +79,8 @@ func (e *list) PushBack(v interface{}) *listItem {
 	newItem.prev = e.last
 	if e.last == nil {
 		e.first = newItem
+	} else {
+		newItem.prev.next = newItem
 	}
 	e.last = newItem
 
@@ -81,6 +88,9 @@ func (e *list) PushBack(v interface{}) *listItem {
 }
 
 func (e *list) Remove(item *listItem) error {
+	if item == nil {
+		return ErrNilledItem
+	}
 	if _, ok := e.index[item.id]; !ok {
 		return ErrOuterItem
 	}
@@ -88,18 +98,20 @@ func (e *list) Remove(item *listItem) error {
 	defer e.Unlock()
 
 	e.len--
+	delete(e.index, item.id)
 	item.id = 0
 
-	if item.prev == nil && item.next == nil {
+	switch {
+	case item.prev == nil && item.next == nil:
 		e.first = nil
-		e.last  = nil
-	} else if item.prev == nil {
+		e.last = nil
+	case item.prev == nil:
 		e.first = item.next
 		item.next = nil
-	} else if item.next == nil {
+	case item.next == nil:
 		e.last = item.prev
 		item.prev = nil
-	} else {
+	default:
 		item.prev.next = item.next
 		item.next.prev = item.prev
 		item.next = nil
@@ -109,6 +121,9 @@ func (e *list) Remove(item *listItem) error {
 }
 
 func (e *list) MoveToFront(item *listItem) error {
+	if item == nil {
+		return ErrNilledItem
+	}
 	if _, ok := e.index[item.id]; !ok {
 		return ErrOuterItem
 	}
@@ -119,17 +134,24 @@ func (e *list) MoveToFront(item *listItem) error {
 	defer e.Unlock()
 
 	item.prev.next = item.next
+	if item.next != nil {
+		item.next.prev = item.prev
+	} else {
+		e.last = item.prev
+	}
+	item.prev = nil
 	item.next = e.first
+	e.first.prev = item
 	e.first = item
 
 	return nil
 }
 
-func (e list) Front() *listItem {
+func (e *list) Front() *listItem {
 	return e.first
 }
 
-func (e list) Back() *listItem {
+func (e *list) Back() *listItem {
 	return e.last
 }
 
@@ -137,7 +159,7 @@ func (e *list) initNewItem(v interface{}) *listItem {
 	e.Lock()
 	defer e.Unlock()
 
-	newItem := &listItem{Value: v, id: getId()}
+	newItem := &listItem{Value: v, id: getID()}
 	e.index[newItem.id] = struct{}{}
 	e.len++
 
@@ -145,5 +167,5 @@ func (e *list) initNewItem(v interface{}) *listItem {
 }
 
 func NewList() List {
-	return &list{}
+	return &list{index: make(map[uint]struct{})}
 }
