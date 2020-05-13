@@ -121,7 +121,7 @@ func (e *list) MoveToFront(item *listItem) error {
 	if _, ok := e.index[item.id]; !ok {
 		return ErrOuterItem
 	}
-	e.Remove(item)
+	_ = e.Remove(item)
 	e.PushFront(item.Value)
 
 	return nil
@@ -136,7 +136,6 @@ func (e *list) Back() *listItem {
 }
 
 func (e *list) initNewItem(v interface{}) *listItem {
-
 	newItem := &listItem{Value: v, id: getID()}
 	e.index[newItem.id] = struct{}{}
 	e.len++

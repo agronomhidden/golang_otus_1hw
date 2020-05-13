@@ -6,7 +6,7 @@ type Key string
 type Cache interface {
 	Set(key Key, value interface{}) bool // Добавить значение в кэш по ключу
 	Get(key Key) (interface{}, bool)     // Получить значение из кэша по ключу
-	Clear()                                 // Очистить кэш
+	Clear()                              // Очистить кэш
 }
 
 type lruCache struct {
@@ -21,7 +21,7 @@ func (e *lruCache) Set(key Key, value interface{}) bool {
 	defer e.Unlock()
 	if item, ok := e.items[key]; ok {
 		item.value = value
-		e.queue.MoveToFront(item.parent) //кеш инкапсулирует лист, что гарантирует отсутствие кривых элементов из вне
+		_ = e.queue.MoveToFront(item.parent) //кеш инкапсулирует лист, что гарантирует отсутствие кривых элементов из вне
 		return true
 	}
 	e.items[key] = &cacheItem{key: key, value: value}
@@ -36,7 +36,7 @@ func (e *lruCache) Get(key Key) (interface{}, bool) {
 	e.Lock()
 	defer e.Unlock()
 	if item, ok := e.items[key]; ok {
-		e.queue.MoveToFront(item.parent)
+		_ = e.queue.MoveToFront(item.parent)
 		return item.value, true
 	}
 	return nil, false
@@ -52,7 +52,7 @@ func (e *lruCache) normalizeCapacity() {
 		last := e.queue.Back()
 		cItem := last.Value.(*cacheItem)
 		delete(e.items, cItem.key)
-		e.queue.Remove(last)
+		_ = e.queue.Remove(last)
 	}
 }
 
