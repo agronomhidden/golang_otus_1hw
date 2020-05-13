@@ -81,6 +81,12 @@ func TestCache(t *testing.T) {
 		val, ok = c.Get("two")
 		require.False(t, ok)
 		require.Nil(t, val)
+
+		c.Clear()
+
+		val, ok = c.Get("six")
+		require.False(t, ok)
+		require.Nil(t, val)
 	})
 }
 
@@ -93,14 +99,14 @@ func TestCacheMultithreading(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		for i := 0; i < 1000000; i++ {
-			c.Set(strconv.Itoa(i), i)
+			c.Set(Key(strconv.Itoa(i)), i)
 		}
 	}()
 
 	go func() {
 		defer wg.Done()
 		for i := 0; i < 1000000; i++ {
-			c.Get(strconv.Itoa(rand.Intn(1000000)))
+			c.Get(Key(strconv.Itoa(rand.Intn(1000000))))
 		}
 	}()
 

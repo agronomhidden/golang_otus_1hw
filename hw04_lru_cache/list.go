@@ -3,18 +3,15 @@ package hw04_lru_cache //nolint:golint,stylecheck
 import (
 	"errors"
 	"sync"
+	"sync/atomic"
 )
 
-var mutex = &sync.Mutex{}
-var counter uint
+var counter int64
 var ErrOuterItem = errors.New("list is not contain received item")
 var ErrNilledItem = errors.New("nilled item has been received")
 
 func getID() uint {
-	mutex.Lock()
-	defer mutex.Unlock()
-	counter++
-	return counter
+	return uint(atomic.AddInt64(&counter, 1))
 }
 
 // хочется сделать защиту от передачи в список элемента,
@@ -92,11 +89,8 @@ func (e *list) Remove(item *listItem) error {
 		return ErrNilledItem
 	}
 	if _, ok := e.index[item.id]; !ok {
-		return ErrOuterItem
+		return nil
 	}
-	e.Lock()
-	defer e.Unlock()
-
 	e.len--
 	delete(e.index, item.id)
 	item.id = 0
@@ -127,22 +121,8 @@ func (e *list) MoveToFront(item *listItem) error {
 	if _, ok := e.index[item.id]; !ok {
 		return ErrOuterItem
 	}
-	if e.first == item {
-		return nil
-	}
-	e.Lock()
-	defer e.Unlock()
-
-	item.prev.next = item.next
-	if item.next != nil {
-		item.next.prev = item.prev
-	} else {
-		e.last = item.prev
-	}
-	item.prev = nil
-	item.next = e.first
-	e.first.prev = item
-	e.first = item
+	e.Remove(item)
+	e.PushFront(item.Value)
 
 	return nil
 }
@@ -156,8 +136,6 @@ func (e *list) Back() *listItem {
 }
 
 func (e *list) initNewItem(v interface{}) *listItem {
-	e.Lock()
-	defer e.Unlock()
 
 	newItem := &listItem{Value: v, id: getID()}
 	e.index[newItem.id] = struct{}{}

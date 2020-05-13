@@ -4,8 +4,8 @@ import "sync"
 type Key string
 
 type Cache interface {
-	Set(key string, value interface{}) bool // Добавить значение в кэш по ключу
-	Get(key string) (interface{}, bool)     // Получить значение из кэша по ключу
+	Set(key Key, value interface{}) bool // Добавить значение в кэш по ключу
+	Get(key Key) (interface{}, bool)     // Получить значение из кэша по ключу
 	Clear()                                 // Очистить кэш
 }
 
@@ -16,28 +16,27 @@ type lruCache struct {
 	items map[Key]*cacheItem
 }
 
-func (e *lruCache) Set(key string, value interface{}) bool {
+func (e *lruCache) Set(key Key, value interface{}) bool {
 	e.Lock()
 	defer e.Unlock()
-	k := Key(key)
-
-	if item, ok := e.items[k]; ok {
+	if item, ok := e.items[key]; ok {
 		item.value = value
-		_ = e.queue.MoveToFront(item.parent) //кеш инкапсулирует лист, что гарантирует отсутствие кривых элементов из вне
+		e.queue.MoveToFront(item.parent) //кеш инкапсулирует лист, что гарантирует отсутствие кривых элементов из вне
 		return true
 	}
-	e.pushItem(k, value)
+	e.items[key] = &cacheItem{key: key, value: value}
+	qItem := e.queue.PushFront(e.items[key])
+	e.items[key].parent = qItem
 	e.normalizeCapacity()
 
 	return false
 }
 
-func (e *lruCache) Get(key string) (interface{}, bool) {
+func (e *lruCache) Get(key Key) (interface{}, bool) {
 	e.Lock()
 	defer e.Unlock()
-	k := Key(key)
-	if item, ok := e.items[k]; ok {
-		_ = e.queue.MoveToFront(item.parent)
+	if item, ok := e.items[key]; ok {
+		e.queue.MoveToFront(item.parent)
 		return item.value, true
 	}
 	return nil, false
@@ -48,18 +47,12 @@ func (e *lruCache) Clear() {
 	e.queue = NewList()
 }
 
-func (e *lruCache) pushItem(key Key, value interface{}) {
-	e.items[key] = &cacheItem{key: key, value: value}
-	qItem := e.queue.PushFront(e.items[key])
-	e.items[key].parent = qItem
-}
-
 func (e *lruCache) normalizeCapacity() {
 	if e.queue.Len() > e.capacity {
 		last := e.queue.Back()
 		cItem := last.Value.(*cacheItem)
 		delete(e.items, cItem.key)
-		_ = e.queue.Remove(last)
+		e.queue.Remove(last)
 	}
 }
 
