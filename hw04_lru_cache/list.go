@@ -2,7 +2,6 @@ package hw04_lru_cache //nolint:golint,stylecheck
 
 import (
 	"errors"
-	"sync"
 	"sync/atomic"
 )
 
@@ -43,7 +42,6 @@ type list struct {
 	first *listItem
 	last  *listItem
 	index map[uint]struct{}
-	sync.Mutex
 	len int
 }
 
