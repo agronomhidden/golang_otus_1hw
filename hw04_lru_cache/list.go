@@ -14,11 +14,6 @@ func getID() uint {
 	return uint(atomic.AddInt64(&counter, 1))
 }
 
-// хочется сделать защиту от передачи в список элемента,
-// который не принадлежит данному списку
-// для этого вводим некий идентификатор элемента
-// и ошибки если передали чужеродный элемент
-// более того, может быть передан нулевой указатель, как у нас в тестах: middle := l.Back().Next // 20
 type List interface {
 	Len() int
 	Front() *listItem
@@ -29,8 +24,6 @@ type List interface {
 	MoveToFront(i *listItem) error
 }
 
-// думаю есть необходимость защитить next и prev, чтобы извне нельзя было переопределить соседа
-// на элемент из совсем другого списка.
 type listItem struct {
 	Value interface{}
 	next  *listItem
