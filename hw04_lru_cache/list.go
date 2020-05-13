@@ -42,7 +42,7 @@ type list struct {
 	first *listItem
 	last  *listItem
 	index map[uint]struct{}
-	len int
+	len   int
 }
 
 func (e *list) Len() int {
