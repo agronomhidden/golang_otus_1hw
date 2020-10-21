@@ -1,6 +1,6 @@
 module github.com/agronomhidden/golang_otus_1hw/hw01_hello_now
 
-go 1.14
+go 1.15
 
 require (
 	bou.ke/monkey v1.0.2
